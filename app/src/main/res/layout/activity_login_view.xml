@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LoginView">
+
+    <!-- Titulo de la Actividad -->
+    <TextView
+        android:id="@+id/titulo_control_acceso"
+        android:layout_width="330dp"
+        android:layout_height="31dp"
+        android:text="CONTROL DE ACCESO"
+        android:textAlignment="center"
+        android:textColor="#114d94"
+        android:textSize="25dp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout_editor_absoluteX="40dp"
+        tools:layout_editor_absoluteY="105dp" />
+
+    <!-- Campos de Correo Electronico -->
+    <TextView
+        android:id="@+id/text_user"
+        android:layout_width="330dp"
+        android:layout_height="31dp"
+        android:text="Ingrese su correo"
+        android:textAlignment="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout_editor_absoluteX="40dp"
+        tools:layout_editor_absoluteY="250dp" />
+
+    <EditText
+        android:id="@+id/editTextTextEmailAddress"
+        android:layout_width="330dp"
+        android:layout_height="50dp"
+        android:ems="10"
+        android:inputType="textEmailAddress"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout_editor_absoluteX="40dp"
+        tools:layout_editor_absoluteY="285dp" />
+
+    <!-- Campos Contraseña -->
+    <TextView
+        android:id="@+id/text_password"
+        android:layout_width="330dp"
+        android:layout_height="31dp"
+        android:text="Ingrese su Contraseña"
+        android:textAlignment="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout_editor_absoluteX="40dp"
+        tools:layout_editor_absoluteY="400dp"
+        />
+
+    <EditText
+        android:id="@+id/editTextTextPassword"
+        android:layout_width="330dp"
+        android:layout_height="50dp"
+        android:ems="10"
+        android:inputType="textPassword"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout_editor_absoluteX="40dp"
+        tools:layout_editor_absoluteY="430dp" />
+
+    <!-- Boton Validar Login -->
+    <Button
+        android:id="@+id/btn_validacion_login"
+        android:layout_width="250dp"
+        android:layout_height="50dp"
+        android:text="Iniciar Sesion"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout_editor_absoluteY="530dp"
+        />
+
+
+    <TextView
+        android:layout_width="250dp"
+        android:layout_height="0dp"
+        android:text="-- o --"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="592dp" />
+
+
+    <!-- Boton Volver Atras -->
+    <Button
+        android:id="@+id/btn_volver"
+        android:layout_width="250dp"
+        android:layout_height="50dp"
+        android:text="Volver"
+        app:backgroundTint="#F00000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="624dp" />
+
+    <androidx.constraintlayout.widget.Guideline android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
