@@ -7,4 +7,140 @@
     android:layout_height="match_parent"
     tools:context=".ProjectDescription">
 
+    <!-- Titulo de la Activity -->
+    <TextView
+        android:id="@+id/titulo_descripcion"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="50dp"
+        android:layout_marginEnd="32dp"
+        android:text="DESCRIPCION DEL PROYECTO"
+        android:textAlignment="center"
+        android:textColor="#114d94"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- ScrollView para que la descripción larga sea desplazable y no se corte -->
+    <ScrollView
+        android:id="@+id/scroll_descripcion"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/layout_insumos"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/titulo_descripcion">
+
+        <TextView
+            android:id="@+id/text_descripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Este proyecto consiste en un sistema de alarma de seguridad basado en Arduino que utiliza un sensor infrarrojo pasivo (PIR) HC-SR501 para detectar movimiento continuo en un área determinada. Para proporcionar retroalimentación visual sobre su estado, el sistema integra dos LEDs: uno verde que permanece encendido mientras el área está segura bajo monitoreo, y uno rojo que se activa inmediatamente al registrarse una intrusión. De manera simultánea a la detección, el microcontrolador envía una notificación de alerta de forma inalámbrica a un teléfono móvil o computadora mediante un módulo Bluetooth HC-06, logrando un sistema de vigilancia básico que combina advertencias locales en tiempo real con monitoreo remoto."
+            android:justificationMode="inter_word"
+            android:textSize="16sp" />
+    </ScrollView>
+
+    <!-- Contenedor para la imagen, nombre y lista de insumos -->
+    <LinearLayout
+        android:id="@+id/layout_insumos"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/btn_volver"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Lado izquierdo: Imagen del sensor y nombre -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <!-- NOTA: Cambia @drawable/ic_launcher_background por el nombre de tu imagen del sensor -->
+            <ImageView
+                android:id="@+id/img_sensor_pir"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:contentDescription="Sensor PIR HC-SR501"
+                android:src="@drawable/sensorpir" />
+
+            <TextView
+                android:id="@+id/txt_nombre_sensor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Sensor PIR HC-SR501"
+                android:textAlignment="center"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Lado derecho: Lista de insumos -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/txt_insumos_titulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Insumos del proyecto:"
+                android:textColor="#114d94"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txt_insumos_lista"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="• Sensor PIR\n• Módulo Bluetooth HC-06\n• 2 LEDs (uno verde y uno rojo)"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Botones de Desplazamiento (Alineados horizontalmente y anclados al fondo) -->
+    <Button
+        android:id="@+id/btn_volver"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="40dp"
+        android:backgroundTint="#F00000"
+        android:padding="12dp"
+        android:text="Volver"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_siguiente"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btn_siguiente"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="40dp"
+        android:padding="12dp"
+        android:text="Siguiente"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_volver" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

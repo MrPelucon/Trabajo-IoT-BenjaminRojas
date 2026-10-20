@@ -10,101 +10,144 @@
     <!-- Titulo de la Actividad -->
     <TextView
         android:id="@+id/titulo_control_acceso"
-        android:layout_width="330dp"
-        android:layout_height="31dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="32dp"
         android:text="CONTROL DE ACCESO"
         android:textAlignment="center"
         android:textColor="#114d94"
-        android:textSize="25dp"
+        android:textSize="25sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteX="40dp"
-        tools:layout_editor_absoluteY="105dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Campos de Correo Electronico -->
+    <!-- Contenedor central -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/contenedor_formulario"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/txt_error_login"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/titulo_control_acceso">
+
+        <!-- Campos de Correo Electronico -->
+        <TextView
+            android:id="@+id/text_user"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="8dp"
+            android:text="Ingrese su correo"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toTopOf="@+id/campo_email"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <EditText
+            android:id="@+id/campo_email"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="24dp"
+            android:ems="10"
+            android:inputType="textEmailAddress"
+            app:layout_constraintBottom_toTopOf="@+id/text_password"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Campos Contraseña -->
+        <TextView
+            android:id="@+id/text_password"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="8dp"
+            android:text="Ingrese su Contraseña"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toTopOf="@+id/campo_password"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <EditText
+            android:id="@+id/campo_password"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:ems="10"
+            android:inputType="textPassword"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Mensaje de Error en Rojo (Oculto por defecto) -->
     <TextView
-        android:id="@+id/text_user"
-        android:layout_width="330dp"
-        android:layout_height="31dp"
-        android:text="Ingrese su correo"
+        android:id="@+id/txt_error_login"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="12dp"
+        android:text="Correo o Contraseña invalidos."
         android:textAlignment="center"
-        app:layout_constraintStart_toStartOf="parent"
+        android:textColor="#FF0000"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/btn_validacion_login"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteX="40dp"
-        tools:layout_editor_absoluteY="250dp" />
-
-    <EditText
-        android:id="@+id/editTextTextEmailAddress"
-        android:layout_width="330dp"
-        android:layout_height="50dp"
-        android:ems="10"
-        android:inputType="textEmailAddress"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteX="40dp"
-        tools:layout_editor_absoluteY="285dp" />
-
-    <!-- Campos Contraseña -->
-    <TextView
-        android:id="@+id/text_password"
-        android:layout_width="330dp"
-        android:layout_height="31dp"
-        android:text="Ingrese su Contraseña"
-        android:textAlignment="center"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteX="40dp"
-        tools:layout_editor_absoluteY="400dp"
-        />
-
-    <EditText
-        android:id="@+id/editTextTextPassword"
-        android:layout_width="330dp"
-        android:layout_height="50dp"
-        android:ems="10"
-        android:inputType="textPassword"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteX="40dp"
-        tools:layout_editor_absoluteY="430dp" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Boton Validar Login -->
     <Button
         android:id="@+id/btn_validacion_login"
-        android:layout_width="250dp"
-        android:layout_height="50dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="64dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
         android:text="Iniciar Sesion"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/text_separador"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteY="530dp"
-        />
-
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
-        android:layout_width="250dp"
-        android:layout_height="0dp"
+        android:id="@+id/text_separador"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="64dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginBottom="16dp"
         android:text="-- o --"
         android:textAlignment="center"
+        app:layout_constraintBottom_toTopOf="@+id/btn_volver"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.496"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="592dp" />
-
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Boton Volver Atras -->
     <Button
         android:id="@+id/btn_volver"
-        android:layout_width="250dp"
-        android:layout_height="50dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="64dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginBottom="50dp"
+        android:padding="12dp"
         android:text="Volver"
         app:backgroundTint="#F00000"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.496"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="624dp" />
-
-    <androidx.constraintlayout.widget.Guideline android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

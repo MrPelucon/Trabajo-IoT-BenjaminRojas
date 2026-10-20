@@ -7,47 +7,65 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!-- TÍTULO PRINCIPAL (Anclado a la parte superior) -->
     <TextView
         android:id="@+id/text_nombre_proyecto"
-        android:layout_width="344dp"
-        android:layout_height="74dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="32dp"
         android:text="SISTEMA DE ALARMA POR MOVIMIENTO"
         android:textAlignment="center"
         android:textColor="#114d94"
-        android:textSize="25dp"
+        android:textSize="25sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_editor_absoluteY="105dp" />
+        app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- SUBTÍTULO "Integrantes" (Anclado justo arriba del texto de los nombres) -->
     <TextView
-        android:layout_width="344dp"
-        android:layout_height="0dp"
+        android:id="@+id/text_integrantes_titulo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="8dp"
         android:text="Integrantes"
-        android:textSize="20dp"
         android:textAlignment="center"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/text_integrantes_nombres"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_editor_absoluteY="500dp" />
+        app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- NOMBRES (Anclados arriba del botón Siguiente) -->
     <TextView
-        android:layout_width="344dp"
-        android:layout_height="50dp"
+        android:id="@+id/text_integrantes_nombres"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="60dp"
         android:text="Benjamín Rojas y Kevin Valdivia"
         android:textAlignment="center"
-        android:textSize="20dp"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_siguiente"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_editor_absoluteY="537dp" />
+        app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- BOTÓN SIGUIENTE (Anclado a la parte inferior de la pantalla) -->
     <Button
-        android:id="@+id/btn_avanzar"
-        android:layout_width="300dp"
-        android:layout_height="50dp"
+        android:id="@+id/btn_siguiente"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="50dp"
+        android:padding="12dp"
         android:text="Siguiente"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_editor_absoluteY="650dp"
-        />
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
