@@ -24,6 +24,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- IMAGEN CENTRAL (Rellena el espacio entre el título y los integrantes) -->
+    <ImageView
+        android:id="@+id/image_tinkercad"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="24dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/tinkercad"
+        app:layout_constraintTop_toBottomOf="@+id/text_nombre_proyecto"
+        app:layout_constraintBottom_toTopOf="@+id/text_integrantes_titulo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <!-- SUBTÍTULO "Integrantes" (Anclado justo arriba del texto de los nombres) -->
     <TextView
         android:id="@+id/text_integrantes_titulo"
