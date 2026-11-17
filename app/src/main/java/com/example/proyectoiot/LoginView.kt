@@ -41,7 +41,7 @@ class LoginView : AppCompatActivity() {
             Log.d("Login", "Contraseña: $textoCampoPassword")
 
             // VALIDACION DE CREDENCIALES
-            if(emailRegex.matches(textoCampoCorreo.lowercase().trim()) && textoCampoPassword == "Leica2026@"){
+            if(textoCampoCorreo=="" && textoCampoPassword==""){
                 txtErrorLogin.visibility = View.GONE
                 val intent = Intent(this, ProjectDescription::class.java)
                 startActivity(intent)

@@ -13,7 +13,7 @@
       android:layout_width="0dp"
       android:layout_height="wrap_content"
       android:layout_marginStart="32dp"
-      android:layout_marginTop="50dp"
+      android:layout_marginTop="40dp"
       android:layout_marginEnd="32dp"
       android:text="PANEL DE CONTROL"
       android:textAlignment="center"
@@ -24,6 +24,20 @@
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent" />
 
+  <!-- Indicador de Estado Bluetooth -->
+  <TextView
+      android:id="@+id/tv_estado_bluetooth"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="● Buscando dispositivo..."
+      android:textColor="#757575"
+      android:textSize="16sp"
+      android:textStyle="bold"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/titulo_control" />
+
   <!-- ========================================= -->
   <!-- CONTROL DEL SENSOR -->
   <!-- ========================================= -->
@@ -32,14 +46,14 @@
       android:layout_width="0dp"
       android:layout_height="wrap_content"
       android:layout_marginStart="32dp"
-      android:layout_marginTop="80dp"
+      android:layout_marginTop="50dp"
       android:layout_marginEnd="16dp"
       android:text="Sensor de Movimiento"
       android:textSize="20sp"
       android:textStyle="bold"
       app:layout_constraintEnd_toStartOf="@+id/switch_sensor"
       app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/titulo_control" />
+      app:layout_constraintTop_toBottomOf="@+id/tv_estado_bluetooth" />
 
   <Switch
       android:id="@+id/switch_sensor"
