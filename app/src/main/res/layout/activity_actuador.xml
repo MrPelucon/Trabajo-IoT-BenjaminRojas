@@ -1,145 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ActuadorActivity">
+    android:fillViewport="true">
 
-  <!-- Titulo de la Activity -->
-  <TextView
-      android:id="@+id/titulo_control"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="32dp"
-      android:layout_marginTop="40dp"
-      android:layout_marginEnd="32dp"
-      android:text="PANEL DE CONTROL"
-      android:textAlignment="center"
-      android:textColor="#114d94"
-      android:textSize="25sp"
-      android:textStyle="bold"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toTopOf="parent" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-  <!-- Indicador de Estado Bluetooth -->
-  <TextView
-      android:id="@+id/tv_estado_bluetooth"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="● Buscando dispositivo..."
-      android:textColor="#757575"
-      android:textSize="16sp"
-      android:textStyle="bold"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/titulo_control" />
+        <TextView
+            android:id="@+id/titulo_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:text="PANEL DE CONTROL"
+            android:textColor="#114d94"
+            android:textSize="25sp"
+            android:textStyle="bold" />
 
-  <!-- ========================================= -->
-  <!-- CONTROL DEL SENSOR -->
-  <!-- ========================================= -->
-  <TextView
-      android:id="@+id/label_sensor"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="32dp"
-      android:layout_marginTop="50dp"
-      android:layout_marginEnd="16dp"
-      android:text="Sensor de Movimiento"
-      android:textSize="20sp"
-      android:textStyle="bold"
-      app:layout_constraintEnd_toStartOf="@+id/switch_sensor"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/tv_estado_bluetooth" />
+        <TextView
+            android:id="@+id/tv_estado_bluetooth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Bluetooth: selecciona HC-06"
+            android:textColor="#757575"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-  <Switch
-      android:id="@+id/switch_sensor"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginEnd="32dp"
-      android:text="Apagado  "
-      android:textColor="#757575"
-      android:textSize="16sp"
-      app:layout_constraintBottom_toBottomOf="@+id/label_sensor"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintTop_toTopOf="@+id/label_sensor" />
+        <Button
+            android:id="@+id/btn_conectar_bluetooth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Conectar HC-06 / Cambiar módulo" />
 
-  <!-- ========================================= -->
-  <!-- CONTROL LED 1 -->
-  <!-- ========================================= -->
-  <TextView
-      android:id="@+id/label_led1"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="32dp"
-      android:layout_marginTop="50dp"
-      android:layout_marginEnd="16dp"
-      android:text="Iluminación LED 1"
-      android:textSize="20sp"
-      android:textStyle="bold"
-      app:layout_constraintEnd_toStartOf="@+id/switch_led1"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/label_sensor" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="35dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-  <Switch
-      android:id="@+id/switch_led1"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginEnd="32dp"
-      android:text="Apagado  "
-      android:textColor="#757575"
-      android:textSize="16sp"
-      app:layout_constraintBottom_toBottomOf="@+id/label_led1"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintTop_toTopOf="@+id/label_led1" />
+            <TextView
+                android:id="@+id/label_sensor"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Sensor de Movimiento"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
-  <!-- ========================================= -->
-  <!-- CONTROL LED 2 -->
-  <!-- ========================================= -->
-  <TextView
-      android:id="@+id/label_led2"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="32dp"
-      android:layout_marginTop="50dp"
-      android:layout_marginEnd="16dp"
-      android:text="Iluminación LED 2"
-      android:textSize="20sp"
-      android:textStyle="bold"
-      app:layout_constraintEnd_toStartOf="@+id/switch_led2"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@+id/label_led1" />
+            <Switch
+                android:id="@+id/switch_sensor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Apagado"
+                android:textColor="#757575"
+                android:textSize="16sp" />
+        </LinearLayout>
 
-  <Switch
-      android:id="@+id/switch_led2"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginEnd="32dp"
-      android:text="Apagado  "
-      android:textColor="#757575"
-      android:textSize="16sp"
-      app:layout_constraintBottom_toBottomOf="@+id/label_led2"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintTop_toTopOf="@+id/label_led2" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-  <!-- ========================================= -->
-  <!-- BOTÓN VOLVER -->
-  <!-- ========================================= -->
-  <Button
-      android:id="@+id/btn_volver"
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="64dp"
-      android:layout_marginEnd="64dp"
-      android:layout_marginBottom="50dp"
-      android:backgroundTint="#F00000"
-      android:padding="12dp"
-      android:text="Volver"
-      app:layout_constraintBottom_toBottomOf="parent"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent" />
+            <TextView
+                android:id="@+id/label_led1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Iluminación LED 1"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <Switch
+                android:id="@+id/switch_led1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Apagado"
+                android:textColor="#757575"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/label_led2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Iluminación LED 2"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <Switch
+                android:id="@+id/switch_led2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Apagado"
+                android:textColor="#757575"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_volver"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#F00000"
+            android:text="Volver" />
+    </LinearLayout>
+</ScrollView>

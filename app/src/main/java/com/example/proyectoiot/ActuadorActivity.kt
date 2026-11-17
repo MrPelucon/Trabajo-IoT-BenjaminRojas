@@ -6,105 +6,90 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Switch
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import android.widget.Toast
 
-class ActuadorActivity : AppCompatActivity() {
-
+class ActuadorActivity : BluetoothBaseActivity() {
     private lateinit var tvEstadoBluetooth: TextView
+    private lateinit var switchSensor: Switch
+    private lateinit var switchLed1: Switch
+    private lateinit var switchLed2: Switch
+
+    private val listenerEstado: (BluetoothManager.EstadoConexion) -> Unit = { estado ->
+        val conectado = estado == BluetoothManager.EstadoConexion.CONECTADO
+        tvEstadoBluetooth.text = when (estado) {
+            BluetoothManager.EstadoConexion.CONECTADO -> "Bluetooth: conectado"
+            BluetoothManager.EstadoConexion.CONECTANDO -> "Bluetooth: conectando..."
+            BluetoothManager.EstadoConexion.DESCONECTADO -> "Bluetooth: desconectado, reintentando..."
+            BluetoothManager.EstadoConexion.ESPERANDO_BLUETOOTH -> "Bluetooth apagado o sin permiso"
+            BluetoothManager.EstadoConexion.SIN_CONFIGURAR -> "Bluetooth: selecciona HC-06"
+        }
+        tvEstadoBluetooth.setTextColor(
+            if (conectado) Color.rgb(56, 142, 60) else Color.rgb(211, 47, 47)
+        )
+        // Evita que la interfaz acepte comandos que se perderían sin conexión.
+        switchSensor.isEnabled = conectado
+        switchLed1.isEnabled = conectado
+        switchLed2.isEnabled = conectado
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_actuador)
 
-        // Iniciar servicio de reconexión y comunicación (Reemplazar por tu dirección MAC real)
-        BluetoothManager.iniciar("00:21:11:01:86:57")
-
-        // 1. Vinculamos los elementos de la vista
         tvEstadoBluetooth = findViewById(R.id.tv_estado_bluetooth)
-        val switchSensor = findViewById<Switch>(R.id.switch_sensor)
-        val switchLed1 = findViewById<Switch>(R.id.switch_led1)
-        val switchLed2 = findViewById<Switch>(R.id.switch_led2)
-        val btnVolver = findViewById<Button>(R.id.btn_volver)
+        switchSensor = findViewById(R.id.switch_sensor)
+        switchLed1 = findViewById(R.id.switch_led1)
+        switchLed2 = findViewById(R.id.switch_led2)
 
-        // 2. Función genérica para cambiar el aspecto visual de cualquier Switch
-        fun actualizarAspectoSwitch(miSwitch: Switch, estaEncendido: Boolean) {
-            if (estaEncendido) {
-                miSwitch.text = "Encendido"
-                miSwitch.setTextColor(Color.parseColor("#388E3C")) // Texto color Verde
-
-                // Cambiar el color del interruptor a Verde
-                miSwitch.thumbTintList = ColorStateList.valueOf(Color.parseColor("#4CAF50"))
-                miSwitch.trackTintList = ColorStateList.valueOf(Color.parseColor("#A5D6A7"))
-            } else {
-                miSwitch.text = "Apagado"
-                miSwitch.setTextColor(Color.parseColor("#757575")) // Texto color Gris
-
-                // Cambiar el color del interruptor a Gris
-                miSwitch.thumbTintList = ColorStateList.valueOf(Color.parseColor("#F1F1F1"))
-                miSwitch.trackTintList = ColorStateList.valueOf(Color.parseColor("#BDBDBD"))
-            }
+        switchLed1.setOnCheckedChangeListener { _, activo ->
+            actualizarAspecto(switchLed1, activo)
+            mandar(if (activo) "A" else "B")
+        }
+        switchLed2.setOnCheckedChangeListener { _, activo ->
+            actualizarAspecto(switchLed2, activo)
+            mandar(if (activo) "C" else "D")
+        }
+        switchSensor.setOnCheckedChangeListener { _, activo ->
+            actualizarAspecto(switchSensor, activo)
+            mandar(if (activo) "E" else "F")
         }
 
-        // 3. Aplicamos los eventos a cada Switch y enviamos comandos a Arduino
+        actualizarAspecto(switchLed1, switchLed1.isChecked)
+        actualizarAspecto(switchLed2, switchLed2.isChecked)
+        actualizarAspecto(switchSensor, switchSensor.isChecked)
+        switchSensor.isEnabled = false
+        switchLed1.isEnabled = false
+        switchLed2.isEnabled = false
 
-        // LED 1 (Rojo): 'A' para ON, 'B' para OFF
-        switchLed1.setOnCheckedChangeListener { buttonView, isChecked ->
-            actualizarAspectoSwitch(buttonView as Switch, isChecked)
-            if (isChecked) {
-                BluetoothManager.enviarComando("A")
-            } else {
-                BluetoothManager.enviarComando("B")
-            }
-        }
+        findViewById<Button>(R.id.btn_conectar_bluetooth).setOnClickListener { elegirBluetooth() }
+        findViewById<Button>(R.id.btn_volver).setOnClickListener { finish() }
+        prepararBluetooth()
+    }
 
-        // LED 2 (Verde): 'C' para ON, 'D' para OFF
-        switchLed2.setOnCheckedChangeListener { buttonView, isChecked ->
-            actualizarAspectoSwitch(buttonView as Switch, isChecked)
-            if (isChecked) {
-                BluetoothManager.enviarComando("C")
-            } else {
-                BluetoothManager.enviarComando("D")
-            }
-        }
-
-        // Sensor PIR: 'E' para Activar, 'F' para Desactivar
-        switchSensor.setOnCheckedChangeListener { buttonView, isChecked ->
-            actualizarAspectoSwitch(buttonView as Switch, isChecked)
-            if (isChecked) {
-                BluetoothManager.enviarComando("E")
-            } else {
-                BluetoothManager.enviarComando("F")
-            }
-        }
-
-        // Configuración inicial visual (apagados por defecto)
-        actualizarAspectoSwitch(switchLed1, false)
-        actualizarAspectoSwitch(switchLed2, false)
-        actualizarAspectoSwitch(switchSensor, false)
-
-        // Evento volver
-        btnVolver.setOnClickListener {
-            finish()
+    private fun mandar(comando: String) {
+        if (!BluetoothManager.enviarComando(comando)) {
+            Toast.makeText(this, "Sin conexión Bluetooth. Comando no enviado.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Registrar listener para actualizar el TextView de estado en tiempo real
-        BluetoothManager.setEstadoListener { conectado ->
-            if (conectado) {
-                tvEstadoBluetooth.text = "● Conectado"
-                tvEstadoBluetooth.setTextColor(Color.parseColor("#4CAF50")) // Verde
-            } else {
-                tvEstadoBluetooth.text = "● Desconectado (Reconectando...)"
-                tvEstadoBluetooth.setTextColor(Color.parseColor("#F44336")) // Rojo
-            }
-        }
+    private fun actualizarAspecto(control: Switch, activo: Boolean) {
+        control.text = if (activo) "Encendido" else "Apagado"
+        control.setTextColor(Color.parseColor(if (activo) "#388E3C" else "#757575"))
+        control.thumbTintList = ColorStateList.valueOf(
+            Color.parseColor(if (activo) "#4CAF50" else "#F1F1F1")
+        )
+        control.trackTintList = ColorStateList.valueOf(
+            Color.parseColor(if (activo) "#A5D6A7" else "#BDBDBD")
+        )
     }
 
-    override fun onPause() {
-        super.onPause()
-        // Liberar el listener al salir de esta pantalla
-        BluetoothManager.setEstadoListener(null)
+    override fun onStart() {
+        super.onStart()
+        BluetoothManager.agregarListenerEstado(listenerEstado)
+    }
+
+    override fun onStop() {
+        BluetoothManager.quitarListenerEstado(listenerEstado)
+        super.onStop()
     }
 }
