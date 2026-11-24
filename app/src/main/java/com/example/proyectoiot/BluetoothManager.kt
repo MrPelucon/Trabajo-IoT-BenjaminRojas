@@ -48,9 +48,9 @@ object BluetoothManager {
     @Volatile private var ejecutar = false
     @Volatile private var hiloConexion: Thread? = null
     @Volatile private var direccionMac: String? = null
-    // Solo conserva applicationContext, cuyo ciclo de vida coincide con el proceso.
-    @SuppressLint("StaticFieldLeak")
-    @Volatile private var contexto: Context? = null
+    // Almacenamiento del dispositivo seleccionado; protegido por datosLock.
+    // IoTStorage conserva SharedPreferences, no un Context.
+    private var datosDispositivo: IoTStorage? = null
     @Volatile private var socketActivo: BluetoothSocket? = null
     @Volatile private var receptorRegistrado = false
 
@@ -71,11 +71,8 @@ object BluetoothManager {
     @Volatile var ultimaLecturaPirMs: Long? = null
         private set
 
-    private fun almacenamiento(): IoTStorage? {
-        val app = contexto ?: return null
-        val mac = direccionMac ?: return null
-        return IoTStorage(app, mac)
-    }
+    // Se consulta únicamente dentro de synchronized(datosLock).
+    private fun almacenamiento(): IoTStorage? = datosDispositivo
 
     fun estadoControl(control: Control): Boolean? = synchronized(datosLock) {
         almacenamiento()?.control(control)
@@ -155,7 +152,6 @@ object BluetoothManager {
         require(BluetoothAdapter.checkBluetoothAddress(mac)) { "Dirección MAC no válida" }
         require(tienePermiso(context)) { "Falta permiso BLUETOOTH_CONNECT" }
         val app = context.applicationContext
-        contexto = app
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
             putString(CLAVE_MAC, mac)
         }
@@ -165,6 +161,7 @@ object BluetoothManager {
             if (direccionMac != mac) {
                 cerrarSocketActivo()
                 direccionMac = mac
+                datosDispositivo = IoTStorage(app, mac)
                 ultimaDeteccionMs = almacenamiento()?.ultimaDeteccion()
                 actualizarEstado(EstadoConexion.DESCONECTADO, forzar = true)
             }
@@ -172,7 +169,8 @@ object BluetoothManager {
         synchronized(hiloLock) {
             if (hiloConexion?.isAlive != true) {
                 ejecutar = true
-                hiloConexion = Thread(::bucleConexion, "HC06-reconexion").apply {
+                // El hilo recibe únicamente applicationContext, nunca una Activity.
+                hiloConexion = Thread({ bucleConexion(app) }, "HC06-reconexion").apply {
                     isDaemon = true
                     start()
                 }
@@ -195,9 +193,8 @@ object BluetoothManager {
     }
 
     @SuppressLint("MissingPermission")
-    private fun bucleConexion() {
+    private fun bucleConexion(app: Context) {
         while (ejecutar) {
-            val app = contexto ?: break
             val mac = direccionMac ?: break
             val adaptador = obtenerAdaptador(app)
             if (!tienePermiso(app) || adaptador?.isEnabled != true) {
