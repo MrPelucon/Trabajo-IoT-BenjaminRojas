@@ -5,6 +5,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class PirMessageParserTest {
+    @Test fun interpretaMensajesDelArduinoOriginal() {
+        assertEquals(PirMessageParser.Evento.MOVIMIENTO, PirMessageParser.evento("ALERTA: Movimiento detectado"))
+        assertEquals(PirMessageParser.Evento.SIN_MOVIMIENTO, PirMessageParser.evento("ESTADO: Zona despejada"))
+        assertEquals(PirMessageParser.Evento.SIN_MOVIMIENTO, PirMessageParser.evento("NADA: Zona despejada"))
+        assertEquals(PirMessageParser.Evento.ACTIVADO, PirMessageParser.evento("OK: Sensor PIR ACTIVADO"))
+        assertEquals(PirMessageParser.Evento.DESACTIVADO, PirMessageParser.evento("OK: Sensor PIR DESACTIVADO"))
+    }
+
     @Test fun reconoceAusenciaDeMovimiento() {
         listOf("0", "PIR:0", "PIR=0", "SENSOR:0", "SIN MOVIMIENTO",
             "No se detectó movimiento.", "Movimiento no detectado",
@@ -20,10 +28,12 @@ class PirMessageParserTest {
         }
     }
 
-    @Test fun ignoraMensajesNoReconocidos() {
-        listOf("", "LED1:1", "SENSOR DESACTIVADO", "PIR:OFF",
-            "ALERTA: batería baja", "NO HAY ALERTA DE MOVIMIENTO").forEach {
-            assertNull(it, PirMessageParser.movimiento(it))
+    @Test fun noConfundeApagadoConAusencia() {
+        assertNull(PirMessageParser.movimiento("PIR:OFF"))
+        assertEquals(PirMessageParser.Evento.DESACTIVADO, PirMessageParser.evento("PIR:OFF"))
+        assertNull(PirMessageParser.movimiento("OK: Sensor PIR ACTIVADO"))
+        listOf("", "LED1:1", "OK: LED Rojo ENCENDIDO", "ALERTA: batería baja").forEach {
+            assertNull(it, PirMessageParser.evento(it))
         }
     }
 }

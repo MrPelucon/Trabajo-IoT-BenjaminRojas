@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /** Configuración deseada e historial local, independientes para cada HC-06. */
 internal class IoTStorage(context: Context, private val mac: String) {
-    data class EventoPir(val fechaMs: Long, val movimiento: Boolean)
+    data class EventoPir(val fechaMs: Long, val tipo: PirMessageParser.Evento)
 
     private val prefs = context.getSharedPreferences("iot_estado", Context.MODE_PRIVATE)
     private fun clave(nombre: String) = "$mac:$nombre"
@@ -29,21 +29,29 @@ internal class IoTStorage(context: Context, private val mac: String) {
         }.getOrElse { JSONArray() }
         return (0 until datos.length()).mapNotNull { i ->
             val evento = datos.optJSONObject(i) ?: return@mapNotNull null
-            if (!evento.has("fechaMs") || !evento.has("movimiento")) return@mapNotNull null
-            EventoPir(evento.optLong("fechaMs"), evento.optBoolean("movimiento"))
+            if (!evento.has("fechaMs")) return@mapNotNull null
+            // Migra el historial anterior de booleanos sin perder las detecciones.
+            val tipo = if (evento.has("tipo")) {
+                runCatching { PirMessageParser.Evento.valueOf(evento.optString("tipo")) }.getOrNull()
+            } else if (evento.has("movimiento")) {
+                if (evento.optBoolean("movimiento")) PirMessageParser.Evento.MOVIMIENTO
+                else PirMessageParser.Evento.SIN_MOVIMIENTO
+            } else null
+            tipo?.let { EventoPir(evento.optLong("fechaMs"), it) }
         }
     }
 
-    fun registrarPir(movimiento: Boolean, fechaMs: Long) {
+    fun registrarPir(tipo: PirMessageParser.Evento, fechaMs: Long) {
         val anterior = historial()
-        if (anterior.lastOrNull()?.movimiento == movimiento) return
-        val nuevos = (anterior + EventoPir(fechaMs, movimiento)).takeLast(MAX_EVENTOS)
+        // BluetoothManager solo invoca este método para cambios reales observados.
+        // No se deduplican sesiones diferentes en disco: podrían ser detecciones distintas.
+        val nuevos = (anterior + EventoPir(fechaMs, tipo)).takeLast(MAX_EVENTOS)
         val datos = JSONArray()
         nuevos.forEach { evento ->
-            datos.put(JSONObject().put("fechaMs", evento.fechaMs).put("movimiento", evento.movimiento))
+            datos.put(JSONObject().put("fechaMs", evento.fechaMs).put("tipo", evento.tipo.name))
         }
         val editor = prefs.edit().putString(clave("historial_pir"), datos.toString())
-        if (movimiento) editor.putLong(clave("ultima_deteccion"), fechaMs)
+        if (tipo == PirMessageParser.Evento.MOVIMIENTO) editor.putLong(clave("ultima_deteccion"), fechaMs)
         editor.apply()
     }
 

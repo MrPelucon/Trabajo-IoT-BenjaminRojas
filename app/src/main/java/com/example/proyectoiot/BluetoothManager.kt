@@ -57,6 +57,12 @@ object BluetoothManager {
         private set
     @Volatile var estadoPir: Boolean? = null
         private set
+    @Volatile var sensorConfirmado: Boolean? = null
+        private set
+    private var ultimoEventoPir: PirMessageParser.Evento? = null
+    // El firmware original solo envía cambios; el nuevo usa PIR:0/1 periódicos.
+    @Volatile var lecturasPeriodicas = false
+        private set
     @Volatile var ultimaDeteccionMs: Long? = null
         private set
     @Volatile var ultimaLecturaPirMs: Long? = null
@@ -80,6 +86,7 @@ object BluetoothManager {
         datos.guardarControl(control, activo)
         if (control == Control.SENSOR) {
             estadoPir = null
+            sensorConfirmado = null
             ultimaLecturaPirMs = null
         }
         encolarComando(conexion, control.comando(activo))
@@ -269,15 +276,38 @@ object BluetoothManager {
         synchronized(datosLock) {
             if (socketActivo !== conexion || direccionMac != mac) return
             ultimoMensaje = mensaje
-            PirMessageParser.movimiento(mensaje)?.let { detectado ->
-                if (estadoPir != detectado) {
-                    almacenamiento()?.let { datos ->
-                        datos.registrarPir(detectado, System.currentTimeMillis())
-                        ultimaDeteccionMs = datos.ultimaDeteccion()
+            PirMessageParser.evento(mensaje)?.let { evento ->
+                when (evento) {
+                    PirMessageParser.Evento.ACTIVADO -> {
+                        sensorConfirmado = true
+                        estadoPir = null // Activado no significa zona despejada.
+                        ultimaLecturaPirMs = null
+                    }
+                    PirMessageParser.Evento.DESACTIVADO -> {
+                        sensorConfirmado = false
+                        estadoPir = null
+                        ultimaLecturaPirMs = null
+                    }
+                    PirMessageParser.Evento.MOVIMIENTO, PirMessageParser.Evento.SIN_MOVIMIENTO -> {
+                        // Ignora una lectura residual después de la orden de apagar,
+                        // hasta recibir confirmación de activación o una nueva conexión.
+                        if (sensorConfirmado == false || almacenamiento()?.control(Control.SENSOR) == false &&
+                            sensorConfirmado == null) return@let
+                        sensorConfirmado = true
+                        estadoPir = evento == PirMessageParser.Evento.MOVIMIENTO
+                        ultimaLecturaPirMs = SystemClock.elapsedRealtime()
+                        if (mensaje.trim().uppercase(java.util.Locale.ROOT) in setOf("PIR:0", "PIR:1")) {
+                            lecturasPeriodicas = true
+                        }
                     }
                 }
-                estadoPir = detectado
-                ultimaLecturaPirMs = SystemClock.elapsedRealtime()
+                if (ultimoEventoPir != evento) {
+                    almacenamiento()?.let { datos ->
+                        datos.registrarPir(evento, System.currentTimeMillis())
+                        ultimaDeteccionMs = datos.ultimaDeteccion()
+                    }
+                    ultimoEventoPir = evento
+                }
             }
         }
         mainHandler.post {
@@ -324,6 +354,9 @@ object BluetoothManager {
             if (!forzar && estadoActual == nuevo) return
             if (nuevo != EstadoConexion.CONECTADO) {
                 estadoPir = null
+                sensorConfirmado = null
+                ultimoEventoPir = null
+                lecturasPeriodicas = false
                 ultimoMensaje = null
                 ultimaLecturaPirMs = null
             }

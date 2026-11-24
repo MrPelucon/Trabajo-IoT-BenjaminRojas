@@ -1,45 +1,23 @@
-# Configuración y monitor PIR
+# Protocolo PIR y registro
 
-- Se guardan las preferencias por módulo HC-06 en SharedPreferences. Se restauran sin ejecutar los listeners de los interruptores y se reenvían al reconectar.
-- Sin una elección previa no se envía ningún valor predeterminado. El protocolo A-F no confirma la recepción; el panel muestra la configuración deseada, no el estado físico confirmado.
-- El historial conserva los últimos 200 cambios por módulo, con hora local de recepción, sin repetir estados consecutivos. Registra mientras la conexión y el proceso Android sigan activos, incluso fuera del monitor; no registra durante desconexiones ni con la app detenida.
-- Tras 10 segundos sin una lectura PIR válida se muestra SIN DATOS RECIENTES. Una desconexión no equivale a ausencia de movimiento.
+El monitor reconoce los mensajes reales del sketch Arduino original:
+- ALERTA: Movimiento detectado -> movimiento (rojo).
+- ESTADO: Zona despejada -> sin movimiento (verde).
+- OK: Sensor PIR ACTIVADO -> espera de lectura.
+- OK: Sensor PIR DESACTIVADO -> sensor apagado (gris).
 
-## Arduino / HC-06
+El original solo publica zona despejada después de una detección. Por eso, para conocer el estado LOW desde el arranque o al activar el PIR, carga el firmware actualizado en firmware/ARDUINO_IOT/ARDUINO_IOT.ino. Conserva A-F, pines D4/D6/D7, HC-06 RX11/TX10 y 9600 baudios. Es el protocolo de texto del proyecto Android, no el firmware cifrado de otros proyectos.
 
-No se incluye el sketch original en este repositorio. El firmware debe enviar los dos estados mediante la UART del HC-06, terminados en salto de línea:
+El nuevo firmware publica PIR:1, PIR:0 y PIR:OFF, inmediatamente al cambiar y cada 2 segundos. Android distingue sensor apagado de zona despejada. Con el firmware original, conserva la última lectura confirmada mientras siga conectado; con el nuevo, si faltan lecturas por 10 segundos, indica SIN DATOS RECIENTES (no inventa una ausencia). Al apagar se espera confirmación. El panel guarda configuración deseada y la reenvía; no confirma físicamente cada LED.
 
-- `PIR:1`: movimiento.
-- `PIR:0`: ausencia de movimiento.
+Historial local por HC-06: conserva los últimos 200 eventos, incluida activación, desactivación, movimiento y zona despejada. Se mantienen las detecciones guardadas por la versión anterior. Los mensajes repetidos de un mismo estado no generan entradas; una nueva sesión de conexión registra su primera lectura. En pantalla hay resumen, ocho eventos recientes y un botón para ver todo el historial. La fecha corresponde a la recepción en Android; no se recuperan eventos ocurridos con el teléfono desconectado o la app detenida.
 
-Enviar al cambiar y repetir cada 2 segundos permite recuperar el estado después de reconectar. Ejemplo para integrar sin cambiar los pines ni los comandos existentes:
-
-```cpp
-void publicarPir(Stream &bluetooth, bool sensorHabilitado, uint8_t pinPir) {
-  static int anterior = -1;
-  static unsigned long ultimoEnvio = 0;
-  if (!sensorHabilitado) {
-    anterior = -1;
-    return;
-  }
-  int actual = digitalRead(pinPir);
-  unsigned long ahora = millis();
-  if (actual != anterior || ahora - ultimoEnvio >= 2000UL) {
-    bluetooth.println(actual == HIGH ? "PIR:1" : "PIR:0");
-    anterior = actual;
-    ultimoEnvio = ahora;
-  }
-}
-```
-
-Llama a publicarPir desde loop() con la instancia serial del HC-06, la variable de habilitación y el pin PIR existentes. Conserva el manejo de A/B (LED1), C/D (LED2), E/F (sensor) y la lógica local de alarma.
-
-## Validación
-
-1. Cambia los interruptores, vuelve al monitor y entra otra vez al panel.
-2. Cierra y reabre la app; reconecta y verifica que las preferencias se restauran.
-3. Envía PIR:1, PIR:1, PIR:0, PIR:0, PIR:1. Con historial vacío deben aparecer tres eventos.
-4. Desconecta y verifica SIN CONEXIÓN; al reconectar espera una lectura nueva.
-5. Sin enviar lecturas durante 10 segundos verifica SIN DATOS RECIENTES, sin registrar una falsa ausencia.
-6. Reabre la app y verifica el historial.
-7. Ejecuta las pruebas de PirMessageParserTest en Android Studio.
+## Prueba manual
+1. Carga el firmware actualizado; conecta el HC-06.
+2. Activa el sensor sin movimiento: debe aparecer SIN MOVIMIENTO en verde.
+3. Provoca movimiento: debe aparecer MOVIMIENTO DETECTADO en rojo.
+4. Espera a que la salida del PIR vuelva a LOW: debe aparecer SIN MOVIMIENTO.
+5. Repite el paso 3 y 4 dos veces. Comprueba varias entradas alternadas en el historial.
+6. Desactiva el PIR: debe aparecer SENSOR APAGADO en gris y una entrada de apagado.
+7. Abre Ver historial completo, cierra y reabre la app y revisa que persistan los eventos.
+8. Desconecta el HC-06; no debe mostrarse una falsa ausencia de movimiento.

@@ -8,6 +8,10 @@ import android.os.Looper
 import android.os.SystemClock
 import android.widget.Button
 import android.widget.TextView
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import androidx.appcompat.app.AlertDialog
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -21,6 +25,8 @@ class SensorActivity : BluetoothBaseActivity() {
     private lateinit var tvUltimaDeteccion: TextView
     private lateinit var tvMensaje: TextView
     private lateinit var tvHistorial: TextView
+    private lateinit var tvResumen: TextView
+    private lateinit var btnHistorial: Button
     private var historialMostrado: List<IoTStorage.EventoPir>? = null
     private val handler = Handler(Looper.getMainLooper())
     private val revisarVigencia = object : Runnable {
@@ -65,6 +71,9 @@ class SensorActivity : BluetoothBaseActivity() {
         tvUltimaDeteccion = findViewById(R.id.valor_ultima_deteccion)
         tvMensaje = findViewById(R.id.tv_mensaje_recibido)
         tvHistorial = findViewById(R.id.tv_historial_pir)
+        tvResumen = findViewById(R.id.tv_resumen_historial)
+        btnHistorial = findViewById(R.id.btn_historial_completo)
+        btnHistorial.setOnClickListener { abrirHistorial() }
 
         findViewById<Button>(R.id.btn_conectar_bluetooth).setOnClickListener { elegirBluetooth() }
         findViewById<Button>(R.id.btn_siguiente).setOnClickListener {
@@ -97,26 +106,64 @@ class SensorActivity : BluetoothBaseActivity() {
         val historial = BluetoothManager.historialPir()
         if (historial == historialMostrado) return
         historialMostrado = historial
-        val formato = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+        val detecciones = historial.count { it.tipo == PirMessageParser.Evento.MOVIMIENTO }
+        tvResumen.text = "${historial.size} eventos guardados · $detecciones detecciones"
+        btnHistorial.isEnabled = historial.isNotEmpty()
         tvHistorial.text = if (historial.isEmpty()) "Sin eventos registrados" else
-            historial.asReversed().joinToString("\n") { evento ->
-                val estado = if (evento.movimiento) "MOVIMIENTO DETECTADO" else "SIN MOVIMIENTO"
-                "${formato.format(Date(evento.fechaMs))}  ·  $estado"
+            formatearHistorial(historial.asReversed().take(8))
+    }
+
+    private fun etiqueta(tipo: PirMessageParser.Evento): String = when (tipo) {
+        PirMessageParser.Evento.MOVIMIENTO -> "MOVIMIENTO DETECTADO"
+        PirMessageParser.Evento.SIN_MOVIMIENTO -> "SIN MOVIMIENTO"
+        PirMessageParser.Evento.ACTIVADO -> "SENSOR ACTIVADO"
+        PirMessageParser.Evento.DESACTIVADO -> "SENSOR APAGADO"
+    }
+
+    private fun color(tipo: PirMessageParser.Evento): Int = when (tipo) {
+        PirMessageParser.Evento.MOVIMIENTO -> Color.rgb(211, 47, 47)
+        PirMessageParser.Evento.SIN_MOVIMIENTO -> Color.rgb(56, 142, 60)
+        PirMessageParser.Evento.ACTIVADO -> Color.rgb(17, 77, 148)
+        PirMessageParser.Evento.DESACTIVADO -> Color.rgb(117, 117, 117)
+    }
+
+    private fun formatearHistorial(eventos: List<IoTStorage.EventoPir>): CharSequence {
+        val formato = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+        return SpannableStringBuilder().apply {
+            eventos.forEachIndexed { index, evento ->
+                if (index > 0) append("\n\n")
+                append(formato.format(Date(evento.fechaMs))).append("\n")
+                val inicio = length
+                append(etiqueta(evento.tipo))
+                setSpan(ForegroundColorSpan(color(evento.tipo)), inicio, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
+        }
+    }
+
+    private fun abrirHistorial() {
+        val eventos = BluetoothManager.historialPir().asReversed()
+        AlertDialog.Builder(this)
+            .setTitle("Historial PIR · ${eventos.size} eventos")
+            .setMessage(if (eventos.isEmpty()) "Sin eventos registrados" else formatearHistorial(eventos))
+            .setPositiveButton("Cerrar", null)
+            .show()
     }
 
     private fun mostrarEstadoPir() {
         val movimiento = BluetoothManager.estadoPir
         val ultimaLectura = BluetoothManager.ultimaLecturaPirMs
         val conectado = BluetoothManager.estadoActual == BluetoothManager.EstadoConexion.CONECTADO
-        val vencido = ultimaLectura != null && SystemClock.elapsedRealtime() - ultimaLectura >= 10_000L
+        val vencido = BluetoothManager.lecturasPeriodicas && ultimaLectura != null &&
+            SystemClock.elapsedRealtime() - ultimaLectura >= 10_000L
         val estado = when {
             !conectado -> "SIN CONEXIÓN"
+            BluetoothManager.sensorConfirmado == false -> "SENSOR APAGADO"
+            BluetoothManager.sensorConfirmado == null &&
+                BluetoothManager.estadoControl(BluetoothManager.Control.SENSOR) == false -> "APAGADO (SIN CONFIRMAR)"
             vencido -> "SIN DATOS RECIENTES"
             movimiento == true -> "MOVIMIENTO DETECTADO"
             movimiento == false -> "SIN MOVIMIENTO"
-            BluetoothManager.estadoControl(BluetoothManager.Control.SENSOR) == false -> "SENSOR APAGADO (CONFIG.)"
-            else -> "ESPERANDO DATOS"
+            else -> "ESPERANDO LECTURA PIR"
         }
         tvEstadoPir.text = estado
         tvEstadoPir.setTextColor(when (estado) {
