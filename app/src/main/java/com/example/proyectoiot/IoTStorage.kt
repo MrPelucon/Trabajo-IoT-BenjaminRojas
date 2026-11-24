@@ -1,6 +1,7 @@
 package com.example.proyectoiot
 
 import android.content.Context
+import androidx.core.content.edit
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -17,7 +18,9 @@ internal class IoTStorage(context: Context, private val mac: String) {
     }
 
     fun guardarControl(control: BluetoothManager.Control, activo: Boolean) {
-        prefs.edit().putBoolean(clave("control_${control.name}"), activo).apply()
+        prefs.edit {
+            putBoolean(clave("control_${control.name}"), activo)
+        }
     }
 
     fun ultimaDeteccion(): Long? =
@@ -50,9 +53,12 @@ internal class IoTStorage(context: Context, private val mac: String) {
         nuevos.forEach { evento ->
             datos.put(JSONObject().put("fechaMs", evento.fechaMs).put("tipo", evento.tipo.name))
         }
-        val editor = prefs.edit().putString(clave("historial_pir"), datos.toString())
-        if (tipo == PirMessageParser.Evento.MOVIMIENTO) editor.putLong(clave("ultima_deteccion"), fechaMs)
-        editor.apply()
+        prefs.edit {
+            putString(clave("historial_pir"), datos.toString())
+            if (tipo == PirMessageParser.Evento.MOVIMIENTO) {
+                putLong(clave("ultima_deteccion"), fechaMs)
+            }
+        }
     }
 
     companion object {

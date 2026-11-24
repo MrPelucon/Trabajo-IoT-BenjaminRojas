@@ -16,6 +16,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -47,6 +48,8 @@ object BluetoothManager {
     @Volatile private var ejecutar = false
     @Volatile private var hiloConexion: Thread? = null
     @Volatile private var direccionMac: String? = null
+    // Solo conserva applicationContext, cuyo ciclo de vida coincide con el proceso.
+    @SuppressLint("StaticFieldLeak")
     @Volatile private var contexto: Context? = null
     @Volatile private var socketActivo: BluetoothSocket? = null
     @Volatile private var receptorRegistrado = false
@@ -153,8 +156,9 @@ object BluetoothManager {
         require(tienePermiso(context)) { "Falta permiso BLUETOOTH_CONNECT" }
         val app = context.applicationContext
         contexto = app
-        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putString(CLAVE_MAC, mac).apply()
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(CLAVE_MAC, mac)
+        }
         registrarReceptor(app)
 
         synchronized(datosLock) {
@@ -221,7 +225,7 @@ object BluetoothManager {
                     else {
                         val datos = almacenamiento()
                         // Reaplica solo las preferencias que el usuario haya establecido.
-                        Control.values().forEach { control ->
+                        Control.entries.forEach { control ->
                             datos?.control(control)?.let { activo ->
                                 encolarComando(candidato, control.comando(activo))
                             }
