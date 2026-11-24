@@ -3,6 +3,9 @@ package com.example.proyectoiot
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -17,6 +20,15 @@ class SensorActivity : BluetoothBaseActivity() {
     private lateinit var tvEstadoPir: TextView
     private lateinit var tvUltimaDeteccion: TextView
     private lateinit var tvMensaje: TextView
+    private lateinit var tvHistorial: TextView
+    private var historialMostrado: List<IoTStorage.EventoPir>? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private val revisarVigencia = object : Runnable {
+        override fun run() {
+            mostrarEstadoPir()
+            handler.postDelayed(this, 1000L)
+        }
+    }
 
     private val listenerEstado: (BluetoothManager.EstadoConexion) -> Unit = { estado ->
         tvEstadoBluetooth.text = when (estado) {
@@ -30,11 +42,11 @@ class SensorActivity : BluetoothBaseActivity() {
             if (estado == BluetoothManager.EstadoConexion.CONECTADO) Color.rgb(56, 142, 60)
             else Color.rgb(211, 47, 47)
         )
+        mostrarDatos()
     }
 
-    private val listenerDatos: (String) -> Unit = { mensaje ->
-        tvMensaje.text = "Último dato: $mensaje"
-        mostrarEstadoPir()
+    private val listenerDatos: (String) -> Unit = {
+        mostrarDatos()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +64,7 @@ class SensorActivity : BluetoothBaseActivity() {
         tvEstadoPir = findViewById(R.id.valor_estado)
         tvUltimaDeteccion = findViewById(R.id.valor_ultima_deteccion)
         tvMensaje = findViewById(R.id.tv_mensaje_recibido)
+        tvHistorial = findViewById(R.id.tv_historial_pir)
 
         findViewById<Button>(R.id.btn_conectar_bluetooth).setOnClickListener { elegirBluetooth() }
         findViewById<Button>(R.id.btn_siguiente).setOnClickListener {
@@ -67,26 +80,50 @@ class SensorActivity : BluetoothBaseActivity() {
         super.onStart()
         BluetoothManager.agregarListenerEstado(listenerEstado)
         BluetoothManager.agregarListenerDatos(listenerDatos)
-        tvMensaje.text = "Último dato: ${BluetoothManager.ultimoMensaje ?: "sin datos"}"
-        mostrarEstadoPir()
+        mostrarDatos()
+        handler.post(revisarVigencia)
     }
 
     override fun onStop() {
+        handler.removeCallbacks(revisarVigencia)
         BluetoothManager.quitarListenerEstado(listenerEstado)
         BluetoothManager.quitarListenerDatos(listenerDatos)
         super.onStop()
     }
 
+    private fun mostrarDatos() {
+        tvMensaje.text = "Último dato: ${BluetoothManager.ultimoMensaje ?: "sin datos"}"
+        mostrarEstadoPir()
+        val historial = BluetoothManager.historialPir()
+        if (historial == historialMostrado) return
+        historialMostrado = historial
+        val formato = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+        tvHistorial.text = if (historial.isEmpty()) "Sin eventos registrados" else
+            historial.asReversed().joinToString("\n") { evento ->
+                val estado = if (evento.movimiento) "MOVIMIENTO DETECTADO" else "SIN MOVIMIENTO"
+                "${formato.format(Date(evento.fechaMs))}  ·  $estado"
+            }
+    }
+
     private fun mostrarEstadoPir() {
         val movimiento = BluetoothManager.estadoPir
-        tvEstadoPir.text = when (movimiento) {
-            true -> "MOVIMIENTO DETECTADO"
-            false -> "SIN MOVIMIENTO"
-            null -> "ESPERANDO DATOS"
+        val ultimaLectura = BluetoothManager.ultimaLecturaPirMs
+        val conectado = BluetoothManager.estadoActual == BluetoothManager.EstadoConexion.CONECTADO
+        val vencido = ultimaLectura != null && SystemClock.elapsedRealtime() - ultimaLectura >= 10_000L
+        val estado = when {
+            !conectado -> "SIN CONEXIÓN"
+            vencido -> "SIN DATOS RECIENTES"
+            movimiento == true -> "MOVIMIENTO DETECTADO"
+            movimiento == false -> "SIN MOVIMIENTO"
+            BluetoothManager.estadoControl(BluetoothManager.Control.SENSOR) == false -> "SENSOR APAGADO (CONFIG.)"
+            else -> "ESPERANDO DATOS"
         }
-        tvEstadoPir.setTextColor(
-            if (movimiento == true) Color.rgb(211, 47, 47) else Color.rgb(56, 142, 60)
-        )
+        tvEstadoPir.text = estado
+        tvEstadoPir.setTextColor(when (estado) {
+            "MOVIMIENTO DETECTADO" -> Color.rgb(211, 47, 47)
+            "SIN MOVIMIENTO" -> Color.rgb(56, 142, 60)
+            else -> Color.rgb(117, 117, 117)
+        })
         val tiempo = BluetoothManager.ultimaDeteccionMs
         tvUltimaDeteccion.text = tiempo?.let {
             SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(Date(it))

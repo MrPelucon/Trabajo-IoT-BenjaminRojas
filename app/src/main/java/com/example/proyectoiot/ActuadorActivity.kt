@@ -13,6 +13,7 @@ class ActuadorActivity : BluetoothBaseActivity() {
     private lateinit var switchSensor: Switch
     private lateinit var switchLed1: Switch
     private lateinit var switchLed2: Switch
+    private var restaurando = false
 
     private val listenerEstado: (BluetoothManager.EstadoConexion) -> Unit = { estado ->
         val conectado = estado == BluetoothManager.EstadoConexion.CONECTADO
@@ -26,6 +27,7 @@ class ActuadorActivity : BluetoothBaseActivity() {
         tvEstadoBluetooth.setTextColor(
             if (conectado) Color.rgb(56, 142, 60) else Color.rgb(211, 47, 47)
         )
+        cargarControles()
         // Evita que la interfaz acepte comandos que se perderían sin conexión.
         switchSensor.isEnabled = conectado
         switchLed1.isEnabled = conectado
@@ -41,22 +43,10 @@ class ActuadorActivity : BluetoothBaseActivity() {
         switchLed1 = findViewById(R.id.switch_led1)
         switchLed2 = findViewById(R.id.switch_led2)
 
-        switchLed1.setOnCheckedChangeListener { _, activo ->
-            actualizarAspecto(switchLed1, activo)
-            mandar(if (activo) "A" else "B")
-        }
-        switchLed2.setOnCheckedChangeListener { _, activo ->
-            actualizarAspecto(switchLed2, activo)
-            mandar(if (activo) "C" else "D")
-        }
-        switchSensor.setOnCheckedChangeListener { _, activo ->
-            actualizarAspecto(switchSensor, activo)
-            mandar(if (activo) "E" else "F")
-        }
-
-        actualizarAspecto(switchLed1, switchLed1.isChecked)
-        actualizarAspecto(switchLed2, switchLed2.isChecked)
-        actualizarAspecto(switchSensor, switchSensor.isChecked)
+        configurarSwitch(switchLed1, BluetoothManager.Control.LED1)
+        configurarSwitch(switchLed2, BluetoothManager.Control.LED2)
+        configurarSwitch(switchSensor, BluetoothManager.Control.SENSOR)
+        cargarControles()
         switchSensor.isEnabled = false
         switchLed1.isEnabled = false
         switchLed2.isEnabled = false
@@ -66,9 +56,35 @@ class ActuadorActivity : BluetoothBaseActivity() {
         prepararBluetooth()
     }
 
-    private fun mandar(comando: String) {
-        if (!BluetoothManager.enviarComando(comando)) {
-            Toast.makeText(this, "Sin conexión Bluetooth. Comando no enviado.", Toast.LENGTH_SHORT).show()
+    private fun configurarSwitch(control: Switch, tipo: BluetoothManager.Control) {
+        control.isSaveEnabled = false
+        control.setOnCheckedChangeListener { _, activo ->
+            if (!restaurando) {
+                if (!BluetoothManager.configurarControl(tipo, activo)) {
+                    Toast.makeText(this, "Sin conexión Bluetooth. Configuración no modificada.", Toast.LENGTH_SHORT).show()
+                    cargarControles()
+                } else {
+                    actualizarAspecto(control, activo)
+                }
+            }
+        }
+    }
+
+    private fun cargarControles() {
+        restaurando = true
+        try {
+            listOf(
+                switchLed1 to BluetoothManager.Control.LED1,
+                switchLed2 to BluetoothManager.Control.LED2,
+                switchSensor to BluetoothManager.Control.SENSOR
+            ).forEach { (vista, tipo) ->
+                val guardado = BluetoothManager.estadoControl(tipo)
+                vista.isChecked = guardado == true
+                actualizarAspecto(vista, vista.isChecked)
+                if (guardado == null) vista.text = "Sin configurar"
+            }
+        } finally {
+            restaurando = false
         }
     }
 

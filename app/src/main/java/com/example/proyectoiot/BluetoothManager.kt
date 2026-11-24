@@ -14,6 +14,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import java.io.IOException
 import java.util.UUID
@@ -23,6 +24,11 @@ import java.util.concurrent.Executors
 object BluetoothManager {
     enum class EstadoConexion {
         SIN_CONFIGURAR, ESPERANDO_BLUETOOTH, CONECTANDO, CONECTADO, DESCONECTADO
+    }
+
+    enum class Control(val encender: String, val apagar: String) {
+        LED1("A", "B"), LED2("C", "D"), SENSOR("E", "F");
+        fun comando(activo: Boolean) = if (activo) encender else apagar
     }
 
     private val sppUuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
@@ -36,6 +42,7 @@ object BluetoothManager {
     private val observadoresDatos = mutableSetOf<(String) -> Unit>()
     private val escritor = Executors.newSingleThreadExecutor()
     private val hiloLock = Any()
+    private val datosLock = Any()
 
     @Volatile private var ejecutar = false
     @Volatile private var hiloConexion: Thread? = null
@@ -52,6 +59,36 @@ object BluetoothManager {
         private set
     @Volatile var ultimaDeteccionMs: Long? = null
         private set
+    @Volatile var ultimaLecturaPirMs: Long? = null
+        private set
+
+    private fun almacenamiento(): IoTStorage? {
+        val app = contexto ?: return null
+        val mac = direccionMac ?: return null
+        return IoTStorage(app, mac)
+    }
+
+    fun estadoControl(control: Control): Boolean? = synchronized(datosLock) {
+        almacenamiento()?.control(control)
+    }
+
+    /** Guarda la configuración deseada; A-F no confirman el estado físico. */
+    fun configurarControl(control: Control, activo: Boolean): Boolean = synchronized(datosLock) {
+        val conexion = socketActivo ?: return@synchronized false
+        if (estadoActual != EstadoConexion.CONECTADO) return@synchronized false
+        val datos = almacenamiento() ?: return@synchronized false
+        datos.guardarControl(control, activo)
+        if (control == Control.SENSOR) {
+            estadoPir = null
+            ultimaLecturaPirMs = null
+        }
+        encolarComando(conexion, control.comando(activo))
+        true
+    }
+
+    internal fun historialPir(): List<IoTStorage.EventoPir> = synchronized(datosLock) {
+        almacenamiento()?.historial() ?: emptyList()
+    }
 
     private val receptor = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -113,11 +150,13 @@ object BluetoothManager {
             .edit().putString(CLAVE_MAC, mac).apply()
         registrarReceptor(app)
 
-        val cambio = direccionMac != mac
-        direccionMac = mac
-        if (cambio) {
-            cerrarSocketActivo()
-            actualizarEstado(EstadoConexion.DESCONECTADO)
+        synchronized(datosLock) {
+            if (direccionMac != mac) {
+                cerrarSocketActivo()
+                direccionMac = mac
+                ultimaDeteccionMs = almacenamiento()?.ultimaDeteccion()
+                actualizarEstado(EstadoConexion.DESCONECTADO, forzar = true)
+            }
         }
         synchronized(hiloLock) {
             if (hiloConexion?.isAlive != true) {
@@ -161,10 +200,30 @@ object BluetoothManager {
                 actualizarEstado(EstadoConexion.CONECTANDO)
                 candidato = adaptador.getRemoteDevice(mac)
                     .createRfcommSocketToServiceRecord(sppUuid)
-                socketActivo = candidato
+                val asignado = synchronized(datosLock) {
+                    if (!ejecutar || direccionMac != mac) false
+                    else {
+                        socketActivo = candidato
+                        true
+                    }
+                }
+                if (!asignado) continue
                 candidato.connect() // Operación bloqueante, nunca en el hilo de UI.
-                if (!ejecutar || direccionMac != mac || socketActivo !== candidato) continue
-                actualizarEstado(EstadoConexion.CONECTADO)
+                val listo = synchronized(datosLock) {
+                    if (!ejecutar || direccionMac != mac || socketActivo !== candidato) false
+                    else {
+                        val datos = almacenamiento()
+                        // Reaplica solo las preferencias que el usuario haya establecido.
+                        Control.values().forEach { control ->
+                            datos?.control(control)?.let { activo ->
+                                encolarComando(candidato, control.comando(activo))
+                            }
+                        }
+                        actualizarEstado(EstadoConexion.CONECTADO)
+                        true
+                    }
+                }
+                if (!listo) continue
                 leerMensajes(candidato, mac)
             } catch (_: IOException) {
                 // Al perder el enlace, el ciclo continuará intentando la conexión.
@@ -173,9 +232,11 @@ object BluetoothManager {
             } catch (_: IllegalArgumentException) {
                 // Dirección inválida o dispositivo no disponible.
             } finally {
-                if (socketActivo === candidato) socketActivo = null
+                synchronized(datosLock) {
+                    if (socketActivo === candidato) socketActivo = null
+                    if (ejecutar) actualizarEstado(EstadoConexion.DESCONECTADO)
+                }
                 try { candidato?.close() } catch (_: IOException) { }
-                if (ejecutar) actualizarEstado(EstadoConexion.DESCONECTADO)
             }
             esperarReintento()
         }
@@ -194,7 +255,7 @@ object BluetoothManager {
                 if (caracter == '\n' || caracter == '\r') {
                     val mensaje = pendiente.toString().trim()
                     pendiente.setLength(0)
-                    if (mensaje.isNotEmpty()) procesarMensaje(mensaje)
+                    if (mensaje.isNotEmpty()) procesarMensaje(mensaje, conexion, mac)
                 } else if (pendiente.length < 4096) {
                     pendiente.append(caracter)
                 } else {
@@ -204,11 +265,20 @@ object BluetoothManager {
         }
     }
 
-    private fun procesarMensaje(mensaje: String) {
-        ultimoMensaje = mensaje
-        PirMessageParser.movimiento(mensaje)?.let { detectado ->
-            estadoPir = detectado
-            if (detectado) ultimaDeteccionMs = System.currentTimeMillis()
+    private fun procesarMensaje(mensaje: String, conexion: BluetoothSocket, mac: String) {
+        synchronized(datosLock) {
+            if (socketActivo !== conexion || direccionMac != mac) return
+            ultimoMensaje = mensaje
+            PirMessageParser.movimiento(mensaje)?.let { detectado ->
+                if (estadoPir != detectado) {
+                    almacenamiento()?.let { datos ->
+                        datos.registrarPir(detectado, System.currentTimeMillis())
+                        ultimaDeteccionMs = datos.ultimaDeteccion()
+                    }
+                }
+                estadoPir = detectado
+                ultimaLecturaPirMs = SystemClock.elapsedRealtime()
+            }
         }
         mainHandler.post {
             val copia = synchronized(observadoresLock) { observadoresDatos.toList() }
@@ -219,35 +289,46 @@ object BluetoothManager {
         }
     }
 
-    /** Devuelve false si no había conexión al solicitar el envío. */
-    fun enviarComando(comando: String): Boolean {
-        val conexion = socketActivo ?: return false
-        if (estadoActual != EstadoConexion.CONECTADO) return false
+    private fun encolarComando(conexion: BluetoothSocket, comando: String) {
         escritor.execute {
             if (socketActivo !== conexion) return@execute
             try {
                 conexion.outputStream.write(comando.toByteArray(Charsets.US_ASCII))
                 conexion.outputStream.flush()
             } catch (_: IOException) {
-                if (socketActivo === conexion) cerrarSocketActivo()
+                synchronized(datosLock) {
+                    if (socketActivo === conexion) cerrarSocketActivo()
+                }
+            } catch (_: SecurityException) {
+                synchronized(datosLock) {
+                    if (socketActivo === conexion) cerrarSocketActivo()
+                }
             }
         }
-        return true
     }
 
     private fun cerrarSocketActivo() {
-        val actual = socketActivo
-        socketActivo = null
-        try { actual?.close() } catch (_: IOException) { }
+        synchronized(datosLock) {
+            val actual = socketActivo
+            socketActivo = null
+            try { actual?.close() } catch (_: IOException) { }
+        }
     }
 
     private fun esperarReintento() {
         try { Thread.sleep(REINTENTO_MS) } catch (_: InterruptedException) { }
     }
 
-    private fun actualizarEstado(nuevo: EstadoConexion) {
-        if (estadoActual == nuevo) return
-        estadoActual = nuevo
+    private fun actualizarEstado(nuevo: EstadoConexion, forzar: Boolean = false) {
+        synchronized(datosLock) {
+            if (!forzar && estadoActual == nuevo) return
+            if (nuevo != EstadoConexion.CONECTADO) {
+                estadoPir = null
+                ultimoMensaje = null
+                ultimaLecturaPirMs = null
+            }
+            estadoActual = nuevo
+        }
         mainHandler.post {
             val copia = synchronized(observadoresLock) { observadoresEstado.toList() }
             copia.forEach { observador ->
